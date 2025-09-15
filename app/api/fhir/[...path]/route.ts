@@ -9,68 +9,75 @@ export async function GET(
   context: { params: { path: string[] } }
 ) {
   try {
-    const pathParams = context.params.path;
-    
-    if (!pathParams || pathParams.length === 0) {
-      console.error('Missing path parameters');
+    // Correct: do NOT use await here
+    const pathSegments = context.params.path;
+
+    if (!Array.isArray(pathSegments) || pathSegments.length === 0) {
       return NextResponse.json({ message: 'Invalid path' }, { status: 400 });
     }
 
-    const path = pathParams.join('/');
+    const path = pathSegments.join('/');
     const url = `${EPIC_FHIR_BASE_URL}/api/FHIR/DSTU2/${path}`;
     
-    // Create base64 encoded credentials for Basic Auth
+    console.log('Full Request URL:', url);
+
     const credentials = Buffer.from(`${EPIC_FHIR_USERNAME}:${EPIC_FHIR_PASSWORD}`).toString('base64');
-    
-    console.log('Attempting to fetch:', url);
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/fhir+json',  // Changed content type to FHIR-specific
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
         'Authorization': `Basic ${credentials}`
       },
-      next: { revalidate: 0 } // Disable cache
+      next: { revalidate: 0 }
     });
 
-    // Check if response is OK before trying to parse JSON
-    if (!response.ok) {
-      console.error('FHIR API Error:', {
-        status: response.status,
-        statusText: response.statusText
-      });
-      return NextResponse.json(
-        { message: `FHIR server error: ${response.statusText}` },
-        { status: response.status }
-      );
-    }
+    // Log response details for debugging
+    console.log('FHIR Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
 
+    // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
-    const isJson = contentType?.includes('json') || contentType?.includes('fhir');
-    
-    if (!isJson) {
-      console.error('Invalid content type:', contentType);
+    if (!contentType?.includes('json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
       return NextResponse.json(
-        { message: 'Invalid response format from FHIR server' },
+        { message: 'Invalid response from FHIR server' },
         { status: 500 }
       );
     }
 
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error('FHIR Error:', {
+        status: response.status,
+        data: data
+      });
+      return NextResponse.json({
+        message: data.issue?.[0]?.diagnostics || 'FHIR server error',
+        status: response.status,
+        details: data
+      }, { status: response.status });
+    }
+
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Server Error:', {
-      name: error instanceof Error ? error.name : 'Unknown Error',
-      message: error instanceof Error ? error.message : String(error)
+    // Enhanced error logging
+    console.error('API Route Error:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     });
-    
-    return NextResponse.json(
-      { 
-        message: 'Failed to fetch from FHIR server', 
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    );
+
+    return NextResponse.json({
+      message: 'Failed to fetch from FHIR server',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
