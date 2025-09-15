@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📌 EHR + User Management API Collection
 
-## Getting Started
+This repository contains a **Postman Collection** for testing and documenting APIs built for the **EHR (Electronic Health Records) + User Management System**.  
+It includes authentication, user management, file uploads, and mock EHR endpoints for patients, appointments, and medical records.  
 
-First, run the development server:
+---
 
+## 🚀 Features Covered
+
+### 🔑 Authentication (`/auth`)
+- **Register User** – Create new users with role-based access (client, admin, vendor, driver).  
+- **Login User** – Authenticate users and receive a JWT token.  
+- **Refresh Token** – Refresh JWT session.  
+- **Logout User** – Invalidate user session.  
+
+### 👤 User Management (`/user`)
+- **Get User Info** – Retrieve user profile details.  
+- **Update User Info** – Update profile fields (name, address, etc.).  
+- **Update Password** – Change password with old password validation.  
+- **Reset Password** – Reset password via security answer.  
+- **Delete User** – Remove a user account.  
+
+### 📤 Uploads (`/upload-image`)
+- **Upload Profile Image** – Upload profile pictures using `multipart/form-data`.  
+
+### 🏥 EHR Mock APIs (`/patients`, `/ehr`)
+- **Patients** – Create, read, update, delete patients.  
+- **Appointments** – Book, cancel, and reschedule appointments.  
+- **EHR Records** – Manage lab results, prescriptions, allergies, and vitals.  
+
+---
+
+## 🛠️ Setup Instructions
+
+### 1️⃣ Install Postman
+Download and install [Postman](https://www.postman.com/downloads/).
+
+### 2️⃣ Import the Collection
+1. Open Postman.  
+2. Click **Import** → Select `EHR-Integration.postman_collection.json`.  
+3. Collection will appear in your **Collections** sidebar.  
+
+### 3️⃣ Set Environment Variables
+In Postman, create an environment with the following variables:
+
+| Variable | Example Value |
+|----------|---------------|
+| `baseUrl` | `http://localhost:5000/api` |
+| `token` | (your JWT token after login) |
+
+### 4️⃣ Authenticate
+1. Run the **Register User** request.  
+2. Run the **Login User** request → Copy the `token` from response.  
+3. Paste the token into the `token` environment variable.  
+4. Now you can access protected routes (User, Upload, EHR).  
+
+---
+
+
+## ⚡ Example Usage (cURL)
+
+Login user:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+curl -X POST {{baseUrl}}/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "123456"
+  }'
